@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BeatCut</title>
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #1a1a1a;
+    --surface2: #242424;
+    --border: #333;
+    --text: #f0f0f0;
+    --text2: #888;
+    --accent: #e63946;
+    --accent-hover: #c1121f;
+    --green: #2ecc71;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow-y: auto;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .container {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 30px 24px 40px;
+  }
+
+  h1 { font-size: 36px; font-weight: 700; letter-spacing: -0.5px; }
+
+  .subtitle {
+    color: var(--text2);
+    font-size: 14px;
+    margin-top: 4px;
+    margin-bottom: 28px;
+  }
+
+  .section-label {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text2);
+    margin-top: 24px;
+    margin-bottom: 8px;
+  }
+
+  /* Drop zones */
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--surface);
+  }
+  .drop-zone:hover { border-color: var(--accent); background: var(--surface2); }
+  .drop-zone .icon { font-size: 28px; margin-bottom: 8px; }
+  .drop-zone .label { color: var(--text2); font-size: 14px; }
+  .drop-zone .hint { color: var(--border); font-size: 11px; margin-top: 4px; }
+
+  /* File list */
+  .file-list { margin-top: 8px; }
+  .file-item {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface); border-radius: 8px;
+    padding: 8px 12px; margin-bottom: 4px; font-size: 13px;
+  }
+  .file-item .name { flex: 1; }
+  .file-item .remove {
+    background: none; border: none; color: var(--text2);
+    cursor: pointer; font-size: 16px; padding: 0 4px;
+  }
+  .file-item .remove:hover { color: var(--accent); }
+
+  .audio-name { font-size: 13px; color: var(--green); margin-top: 6px; }
+
+  /* Radio / options */
+  .radio-group { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .radio-group label {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 14px; font-size: 13px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .radio-group label:hover { border-color: var(--accent); }
+  .radio-group input:checked + span { color: var(--accent); font-weight: 600; }
+  .radio-group input { display: none; }
+
+  /* Toggle */
+  .toggle-row { display: flex; align-items: center; gap: 10px; margin: 8px 0; font-size: 13px; }
+  .toggle {
+    width: 40px; height: 22px; background: var(--border);
+    border-radius: 11px; position: relative; cursor: pointer; transition: background 0.2s;
+  }
+  .toggle.on { background: var(--accent); }
+  .toggle::after {
+    content: ""; width: 18px; height: 18px; border-radius: 50%;
+    background: white; position: absolute; top: 2px; left: 2px; transition: transform 0.2s;
+  }
+  .toggle.on::after { transform: translateX(18px); }
+
+  /* Inputs */
+  input[type="text"], select {
+    width: 100%; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; color: var(--text);
+    font-size: 14px; outline: none; font-family: inherit;
+  }
+  input[type="text"]:focus, select:focus { border-color: var(--accent); }
+
+  .text-options { display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap; align-items: center; }
+  .text-options label { font-size: 12px; color: var(--text2); }
+  .text-options select { width: auto; min-width: 100px; }
+
+  .slider-group { display: flex; align-items: center; gap: 8px; }
+  input[type="range"] {
+    -webkit-appearance: none; background: var(--border); height: 4px;
+    border-radius: 2px; outline: none; width: 120px;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 16px; height: 16px;
+    border-radius: 50%; background: var(--accent); cursor: pointer;
+  }
+  .slider-val { font-size: 12px; color: var(--text2); min-width: 35px; }
+
+  /* Grade presets */
+  .grade-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .grade-preset {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; cursor: pointer;
+    font-size: 13px; transition: all 0.15s; text-align: left;
+    flex: 1 1 calc(50% - 3px); min-width: 180px;
+  }
+  .grade-preset:hover { border-color: var(--accent); }
+  .grade-preset.active { border-color: var(--accent); background: var(--surface2); }
+  .grade-preset .preset-name { font-weight: 600; margin-bottom: 2px; }
+  .grade-preset .preset-desc { font-size: 11px; color: var(--text2); }
+
+  .grade-sliders { margin-top: 10px; }
+  .grade-slider-row {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 6px; font-size: 12px;
+  }
+  .grade-slider-row .label { width: 90px; color: var(--text2); text-align: right; }
+  .grade-slider-row input[type="range"] { flex: 1; width: auto; }
+  .grade-slider-row .val { width: 45px; text-align: left; color: var(--text2); }
+
+  /* Lyrics timeline */
+  .lyrics-list { margin-top: 8px; }
+  .lyric-row {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface); border-radius: 8px;
+    padding: 8px 10px; margin-bottom: 4px; font-size: 13px;
+  }
+  .lyric-row input[type="text"] {
+    flex: 1; min-width: 0; padding: 6px 10px; font-size: 13px;
+  }
+  .lyric-row .time-input { width: 58px !important; flex: none; }
+  .lyric-row .remove {
+    background: none; border: none; color: var(--text2);
+    cursor: pointer; font-size: 16px; padding: 0 2px; flex-shrink: 0;
+  }
+  .lyric-row .remove:hover { color: var(--accent); }
+  .add-lyric-btn {
+    background: var(--surface2); border: 1px dashed var(--border);
+    border-radius: 8px; padding: 8px; text-align: center;
+    color: var(--text2); font-size: 13px; cursor: pointer;
+    margin-top: 4px; transition: border-color 0.15s;
+  }
+  .add-lyric-btn:hover { border-color: var(--accent); color: var(--text); }
+  .lyric-global-opts {
+    display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap; align-items: center;
+  }
+  .lyric-global-opts label { font-size: 12px; color: var(--text2); }
+  .lyric-global-opts select { width: auto; min-width: 90px; }
+
+  /* Song range */
+  .range-row {
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  }
+  .range-row label { font-size: 12px; color: var(--text2); }
+  .time-input {
+    width: 70px !important; text-align: center; font-variant-numeric: tabular-nums;
+    padding: 8px 6px !important;
+  }
+  .range-hint { font-size: 11px; color: var(--border); margin-top: 4px; }
+
+  /* Timeline editor */
+  .timeline-wrap {
+    display: none; margin-top: 8px;
+  }
+  .timeline-wrap.visible { display: block; }
+  .timeline-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 6px;
+  }
+  .timeline-header .hint { font-size: 11px; color: var(--text2); }
+  .timeline-grid {
+    display: flex; flex-wrap: wrap; gap: 3px;
+  }
+  .timeline-slot {
+    flex: 1 0 28px; max-width: 48px; height: 36px;
+    border-radius: 4px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; color: white;
+    transition: all 0.1s; border: 2px solid transparent;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  }
+  .timeline-slot:hover { border-color: white; transform: scale(1.1); }
+  .timeline-legend {
+    display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text2);
+  }
+  .legend-swatch {
+    width: 12px; height: 12px; border-radius: 3px;
+  }
+
+  /* Render button */
+  .render-btn {
+    width: 100%; padding: 16px; margin-top: 28px; border: none;
+    border-radius: 12px; background: var(--accent); color: white;
+    font-size: 18px; font-weight: 700; cursor: pointer;
+    transition: background 0.2s; letter-spacing: 0.3px;
+  }
+  .render-btn:hover { background: var(--accent-hover); }
+  .render-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Progress */
+  .progress-wrap { margin-top: 12px; display: none; }
+  .progress-wrap.visible { display: block; }
+  .progress-bar { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .progress-fill {
+    height: 100%; background: var(--accent); border-radius: 3px;
+    width: 0%; transition: width 0.3s;
+  }
+  .progress-msg { font-size: 12px; color: var(--text2); margin-top: 6px; }
+
+  /* Done banner */
+  .done-banner {
+    display: none; background: var(--surface); border: 1px solid var(--green);
+    border-radius: 12px; padding: 16px; margin-top: 16px; text-align: center;
+  }
+  .done-banner.visible { display: block; }
+  .done-banner .path { font-size: 12px; color: var(--text2); margin: 8px 0; word-break: break-all; }
+  .done-banner button {
+    background: var(--green); border: none; border-radius: 8px;
+    padding: 8px 20px; color: white; font-weight: 600; cursor: pointer; font-size: 13px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>BeatCut</h1>
+  <p class="subtitle">Drop your videos & music. We cut to the beat. TikTok-ready 9:16.</p>
+
+  <!-- VIDEOS -->
+  <div class="section-label">Videos</div>
+  <div class="drop-zone" id="videoZone" onclick="pickVideos()">
+    <div class="icon">🎬</div>
+    <div class="label">Click to add video files</div>
+    <div class="hint">MP4, MOV, AVI, MKV, WebM</div>
+  </div>
+  <div class="file-list" id="videoList"></div>
+
+  <!-- MUSIC -->
+  <div class="section-label">Music</div>
+  <div class="drop-zone" id="audioZone" onclick="pickAudio()">
+    <div class="icon">🎵</div>
+    <div class="label">Click to select your master audio</div>
+    <div class="hint">MP3, WAV, FLAC, AAC, M4A</div>
+  </div>
+  <div class="audio-name" id="audioName"></div>
+
+  <!-- CUT MODE -->
+  <div class="section-label">Cut Mode</div>
+  <div class="radio-group" id="cutModes">
+    <label><input type="radio" name="cutMode" value="every_beat" checked><span>Every Beat</span></label>
+    <label><input type="radio" name="cutMode" value="every_2"><span>Every 2 Beats</span></label>
+    <label><input type="radio" name="cutMode" value="every_4"><span>Every Bar</span></label>
+    <label><input type="radio" name="cutMode" value="adaptive"><span>Adaptive</span></label>
+  </div>
+
+  <div class="toggle-row">
+    <div class="toggle" id="shuffleToggle" onclick="toggleShuffle()"></div>
+    <span>Shuffle video order</span>
+  </div>
+
+  <!-- SONG RANGE -->
+  <div class="section-label">Song Range</div>
+  <div class="range-row">
+    <div>
+      <label>Start</label>
+      <input type="text" id="songStart" class="time-input" value="0:00" placeholder="0:00">
+    </div>
+    <span style="color:var(--text2);">to</span>
+    <div>
+      <label>End</label>
+      <input type="text" id="songEnd" class="time-input" value="" placeholder="end">
+    </div>
+    <button class="btn-analyze" id="analyzeBtn" onclick="analyzeBeats()" style="
+      background:var(--surface2); border:1px solid var(--border); border-radius:8px;
+      padding:8px 14px; color:var(--text); font-size:13px; cursor:pointer;
+    ">Analyze Beats</button>
+  </div>
+  <div class="range-hint">Leave end empty to use full song. Format: M:SS or seconds.</div>
+
+  <!-- TIMELINE EDITOR -->
+  <div class="timeline-wrap" id="timelineWrap">
+    <div class="section-label">Timeline — click any slot to change its video</div>
+    <div class="timeline-header">
+      <span class="hint" id="timelineInfo"></span>
+      <button onclick="resetTimeline()" style="
+        background:none; border:1px solid var(--border); border-radius:6px;
+        padding:4px 10px; color:var(--text2); font-size:11px; cursor:pointer;
+      ">Reset</button>
+    </div>
+    <div class="timeline-grid" id="timelineGrid"></div>
+    <div class="timeline-legend" id="timelineLegend"></div>
+  </div>
+
+  <!-- LYRICS -->
+  <div class="section-label">Lyrics · Helvetica Neue</div>
+  <textarea id="lyricsInput" placeholder="Paste your lyrics here — one line per line.&#10;They'll be auto-timed to the beats of your song." style="
+    width:100%; min-height:120px; background:var(--surface); border:1px solid var(--border);
+    border-radius:8px; padding:12px 14px; color:var(--text); font-size:14px;
+    font-family:inherit; outline:none; resize:vertical; line-height:1.6;
+  "></textarea>
+  <div style="font-size:11px; color:var(--border); margin-top:4px;">
+    Each line auto-syncs to beats in order. Empty lines create pauses.
+  </div>
+
+  <div style="display:flex; gap:12px; margin-top:8px; flex-wrap:wrap; align-items:center;">
+    <div>
+      <label style="font-size:12px; color:var(--text2);">Position</label>
+      <select id="textPos" style="width:auto; min-width:90px;">
+        <option value="top">Top</option>
+        <option value="center" selected>Center</option>
+        <option value="bottom">Bottom</option>
+      </select>
+    </div>
+    <div class="slider-group">
+      <label style="font-size:12px; color:var(--text2);">Size</label>
+      <input type="range" id="textSize" min="24" max="144" value="72">
+      <span class="slider-val" id="sizeVal">72px</span>
+    </div>
+    <div>
+      <label style="font-size:12px; color:var(--text2);">Color</label>
+      <select id="textColor" style="width:auto; min-width:90px;">
+        <option value="white">White</option>
+        <option value="black">Black</option>
+        <option value="red">Red</option>
+        <option value="yellow">Yellow</option>
+        <option value="cyan">Cyan</option>
+        <option value="#FFD700">Gold</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- COLOR GRADE -->
+  <div class="section-label">Color Grade</div>
+  <div class="grade-presets" id="gradePresets">
+    <div class="grade-preset active" data-id="" onclick="selectPreset(this, '')">
+      <div class="preset-name">None</div>
+      <div class="preset-desc">No color grading applied</div>
+    </div>
+    <div class="grade-preset" data-id="auto" onclick="selectPreset(this, 'auto')">
+      <div class="preset-name">Auto Enhance</div>
+      <div class="preset-desc">Analyzes footage and auto-corrects exposure, contrast, and saturation</div>
+    </div>
+    <div class="grade-preset" data-id="cinematic_warm" onclick="selectPreset(this, 'cinematic_warm')">
+      <div class="preset-name">Cinematic Warm</div>
+      <div class="preset-desc">Warm tones, lifted blacks, slight desaturation — filmic look</div>
+    </div>
+    <div class="grade-preset" data-id="cinematic_cool" onclick="selectPreset(this, 'cinematic_cool')">
+      <div class="preset-name">Cinematic Cool</div>
+      <div class="preset-desc">Cool blue-teal shadows, warm highlights — blockbuster look</div>
+    </div>
+    <div class="grade-preset" data-id="vibrant" onclick="selectPreset(this, 'vibrant')">
+      <div class="preset-name">Vibrant Pop</div>
+      <div class="preset-desc">Boosted saturation and contrast — punchy social media look</div>
+    </div>
+    <div class="grade-preset" data-id="desaturated" onclick="selectPreset(this, 'desaturated')">
+      <div class="preset-name">Muted / Desaturated</div>
+      <div class="preset-desc">Low saturation, soft contrast — moody editorial feel</div>
+    </div>
+    <div class="grade-preset" data-id="golden_hour" onclick="selectPreset(this, 'golden_hour')">
+      <div class="preset-name">Golden Hour</div>
+      <div class="preset-desc">Warm golden tint, soft glow — sunset vibes</div>
+    </div>
+    <div class="grade-preset" data-id="bw_film" onclick="selectPreset(this, 'bw_film')">
+      <div class="preset-name">Black & White Film</div>
+      <div class="preset-desc">Classic B&W with grain texture and lifted blacks</div>
+    </div>
+  </div>
+
+  <!-- Grade adjustment sliders -->
+  <div class="grade-sliders" id="gradeSliders" style="display:none;">
+    <div class="grade-slider-row">
+      <span class="label">Brightness</span>
+      <input type="range" id="gradeBrightness" min="-50" max="50" value="0" step="1">
+      <span class="val" id="valBrightness">0</span>
+    </div>
+    <div class="grade-slider-row">
+      <span class="label">Contrast</span>
+      <input type="range" id="gradeContrast" min="50" max="200" value="100" step="1">
+      <span class="val" id="valContrast">100%</span>
+    </div>
+    <div class="grade-slider-row">
+      <span class="label">Saturation</span>
+      <input type="range" id="gradeSaturation" min="0" max="200" value="100" step="1">
+      <span class="val" id="valSaturation">100%</span>
+    </div>
+    <div class="grade-slider-row">
+      <span class="label">Gamma</span>
+      <input type="range" id="gradeGamma" min="50" max="200" value="100" step="1">
+      <span class="val" id="valGamma">100%</span>
+    </div>
+    <div class="grade-slider-row">
+      <span class="label">Temperature</span>
+      <input type="range" id="gradeTemp" min="-100" max="100" value="0" step="1">
+      <span class="val" id="valTemp">0</span>
+    </div>
+    <div class="grade-slider-row">
+      <span class="label">Tint</span>
+      <input type="range" id="gradeTint" min="-100" max="100" value="0" step="1">
+      <span class="val" id="valTint">0</span>
+    </div>
+  </div>
+
+  <!-- RENDER -->
+  <button class="render-btn" id="renderBtn" onclick="startRender()">
+    Render TikTok Video
+  </button>
+
+  <div class="progress-wrap" id="progressWrap">
+    <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text2); margin-bottom:4px;">
+      <span id="progressPct">0%</span>
+      <span id="progressEta"></span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-msg" id="progressMsg">Ready</div>
+  </div>
+
+  <div class="done-banner" id="doneBanner">
+    <div style="font-size:24px; margin-bottom:8px;">✅</div>
+    <div style="font-weight:600;">Video rendered!</div>
+    <div class="path" id="donePath"></div>
+    <button onclick="revealFile()">Show in Finder</button>
+  </div>
+</div>
+
+<script>
+  // State
+  let shuffle = false;
+  let outputPath = "";
+  let selectedPreset = "";
+  let beatData = null;          // from analyze_beats
+  let timelineAssignments = []; // video index per beat slot
+  let videoNames = [];          // filenames for legend
+
+  // Video colors for timeline slots
+  const VID_COLORS = [
+    "#e63946", "#457b9d", "#2a9d8f", "#e9c46a",
+    "#f4a261", "#264653", "#6a4c93", "#1982c4",
+    "#8ac926", "#ff595e", "#6d6875", "#ffca3a",
+  ];
+
+  function py() { return window.pywebview && window.pywebview.api; }
+
+  // --- Size slider ---
+  document.getElementById("textSize").addEventListener("input", (e) => {
+    document.getElementById("sizeVal").textContent = e.target.value + "px";
+  });
+
+  // --- Grade sliders ---
+  [
+    { id: "gradeBrightness", label: "valBrightness", suffix: "" },
+    { id: "gradeContrast",   label: "valContrast",   suffix: "%" },
+    { id: "gradeSaturation", label: "valSaturation", suffix: "%" },
+    { id: "gradeGamma",      label: "valGamma",      suffix: "%" },
+    { id: "gradeTemp",       label: "valTemp",        suffix: "" },
+    { id: "gradeTint",       label: "valTint",        suffix: "" },
+  ].forEach(({ id, label, suffix }) => {
+    document.getElementById(id).addEventListener("input", (e) => {
+      document.getElementById(label).textContent = e.target.value + suffix;
+    });
+  });
+
+  // --- Toggle ---
+  function toggleShuffle() {
+    shuffle = !shuffle;
+    document.getElementById("shuffleToggle").classList.toggle("on", shuffle);
+  }
+
+  // --- Lyrics (no manual timing needed) ---
+
+  // --- Grade presets ---
+  function selectPreset(el, presetId) {
+    document.querySelectorAll(".grade-preset").forEach(p => p.classList.remove("active"));
+    el.classList.add("active");
+    selectedPreset = presetId;
+    document.getElementById("gradeSliders").style.display = presetId ? "block" : "none";
+  }
+
+  // --- Video picking ---
+  async function pickVideos() {
+    if (!py()) return;
+    const names = await py().pick_videos();
+    videoNames = names;
+    renderVideoList(names);
+  }
+
+  function renderVideoList(names) {
+    const el = document.getElementById("videoList");
+    el.innerHTML = "";
+    names.forEach((name, i) => {
+      const div = document.createElement("div");
+      div.className = "file-item";
+      div.innerHTML = `
+        <span class="legend-swatch" style="background:${VID_COLORS[i % VID_COLORS.length]};flex-shrink:0;"></span>
+        <span class="name" style="margin-left:6px;">${i + 1}. ${name}</span>
+        <button class="remove" onclick="removeVideo(${i})">✕</button>`;
+      el.appendChild(div);
+    });
+  }
+
+  async function removeVideo(idx) {
+    if (!py()) return;
+    const names = await py().remove_video(idx);
+    videoNames = names;
+    renderVideoList(names);
+  }
+
+  // --- Audio ---
+  async function pickAudio() {
+    if (!py()) return;
+    const name = await py().pick_audio();
+    if (name) {
+      document.getElementById("audioName").textContent = name;
+    }
+  }
+
+  // --- Time parsing helpers ---
+  function parseTime(str) {
+    str = (str || "").trim();
+    if (!str) return null;
+    if (str.includes(":")) {
+      const [m, s] = str.split(":");
+      return parseFloat(m) * 60 + parseFloat(s || 0);
+    }
+    return parseFloat(str) || 0;
+  }
+
+  function fmtTime(sec) {
+    const m = Math.floor(sec / 60);
+    const s = (sec % 60).toFixed(1);
+    return `${m}:${s.padStart(4, '0')}`;
+  }
+
+  // --- Beat analysis & timeline editor ---
+  async function analyzeBeats() {
+    if (!py()) return;
+    const btn = document.getElementById("analyzeBtn");
+    btn.textContent = "Analyzing...";
+    btn.style.opacity = "0.5";
+
+    const startTime = parseTime(document.getElementById("songStart").value) || 0;
+    const endTime = parseTime(document.getElementById("songEnd").value);
+
+    try {
+      beatData = await py().analyze_beats(startTime, endTime);
+      if (beatData.error) {
+        alert(beatData.error);
+        return;
+      }
+      buildTimeline();
+    } catch (e) {
+      alert("Error: " + e);
+    } finally {
+      btn.textContent = "Analyze Beats";
+      btn.style.opacity = "1";
+    }
+  }
+
+  function buildTimeline() {
+    if (!beatData || !beatData.beats || beatData.beats.length === 0) return;
+
+    const nBeats = beatData.beats.length;
+    const nVids = videoNames.length || 1;
+
+    // Default: round-robin assignment
+    timelineAssignments = beatData.beats.map((_, i) => i % nVids);
+
+    renderTimeline();
+    document.getElementById("timelineWrap").classList.add("visible");
+    document.getElementById("timelineInfo").textContent =
+      `${nBeats} beats · ${beatData.tempo.toFixed(0)} BPM · ${fmtTime(beatData.range_start)} – ${fmtTime(beatData.range_end)}`;
+  }
+
+  function renderTimeline() {
+    const grid = document.getElementById("timelineGrid");
+    grid.innerHTML = "";
+
+    const nVids = videoNames.length || 1;
+
+    timelineAssignments.forEach((vidIdx, i) => {
+      const slot = document.createElement("div");
+      slot.className = "timeline-slot";
+      slot.style.background = VID_COLORS[vidIdx % VID_COLORS.length];
+      slot.textContent = vidIdx + 1;
+      slot.title = `Beat ${i + 1} @ ${fmtTime(beatData.beats[i])} → Video ${vidIdx + 1}`;
+      slot.onclick = () => {
+        // Cycle to next video
+        timelineAssignments[i] = (vidIdx + 1) % nVids;
+        renderTimeline();
+      };
+      grid.appendChild(slot);
+    });
+
+    // Legend
+    const legend = document.getElementById("timelineLegend");
+    legend.innerHTML = "";
+    videoNames.forEach((name, i) => {
+      const item = document.createElement("div");
+      item.className = "legend-item";
+      item.innerHTML = `<span class="legend-swatch" style="background:${VID_COLORS[i % VID_COLORS.length]}"></span>${i + 1}. ${name}`;
+      legend.appendChild(item);
+    });
+  }
+
+  function resetTimeline() {
+    if (!beatData) return;
+    const nVids = videoNames.length || 1;
+    timelineAssignments = beatData.beats.map((_, i) => i % nVids);
+    renderTimeline();
+  }
+
+  // --- Render ---
+  async function startRender() {
+    if (!py()) return;
+
+    const cutMode = document.querySelector('input[name="cutMode"]:checked').value;
+    const settings = {
+      cut_mode: cutMode,
+      shuffle: shuffle,
+      lyrics_text: document.getElementById("lyricsInput").value,
+      lyrics_position: document.getElementById("textPos").value,
+      lyrics_size: parseInt(document.getElementById("textSize").value),
+      lyrics_color: document.getElementById("textColor").value,
+      range_start: parseTime(document.getElementById("songStart").value) || 0,
+      range_end: parseTime(document.getElementById("songEnd").value),
+    };
+
+    // Pass custom timeline assignments if the user analyzed + edited
+    if (beatData && timelineAssignments.length > 0) {
+      settings.timeline_assignments = timelineAssignments;
+    }
+
+    // Color grade
+    if (selectedPreset) {
+      settings.grade_preset = selectedPreset;
+      settings.brightness = parseInt(document.getElementById("gradeBrightness").value) / 100;
+      settings.contrast = parseInt(document.getElementById("gradeContrast").value) / 100;
+      settings.saturation = parseInt(document.getElementById("gradeSaturation").value) / 100;
+      settings.gamma = parseInt(document.getElementById("gradeGamma").value) / 100;
+      settings.temperature = parseInt(document.getElementById("gradeTemp").value) / 100;
+      settings.tint = parseInt(document.getElementById("gradeTint").value) / 100;
+    }
+
+    document.getElementById("renderBtn").disabled = true;
+    document.getElementById("renderBtn").textContent = "Rendering...";
+    document.getElementById("progressWrap").classList.add("visible");
+    document.getElementById("doneBanner").classList.remove("visible");
+    document.getElementById("progressFill").style.width = "0%";
+    document.getElementById("progressPct").textContent = "0%";
+    document.getElementById("progressEta").textContent = "";
+    document.getElementById("progressMsg").textContent = "Starting...";
+
+    const result = await py().start_render(settings);
+    if (result.error) {
+      alert(result.error);
+      document.getElementById("renderBtn").disabled = false;
+      document.getElementById("renderBtn").textContent = "Render TikTok Video";
+    }
+  }
+
+  // --- Events from Python ---
+  window.onPyEvent = function (event, data) {
+    if (event === "progress") {
+      const pctNum = Math.round(data.pct * 100);
+      document.getElementById("progressFill").style.width = pctNum + "%";
+      document.getElementById("progressPct").textContent = pctNum + "%";
+      document.getElementById("progressMsg").textContent = data.msg;
+      const etaMatch = data.msg.match(/\((.+left)\)/);
+      document.getElementById("progressEta").textContent = etaMatch ? etaMatch[1] : "";
+    } else if (event === "done") {
+      outputPath = data.path;
+      document.getElementById("progressFill").style.width = "100%";
+      document.getElementById("progressPct").textContent = "100%";
+      document.getElementById("progressEta").textContent = "";
+      document.getElementById("progressMsg").textContent = "Complete!";
+      document.getElementById("renderBtn").disabled = false;
+      document.getElementById("renderBtn").textContent = "Render TikTok Video";
+      document.getElementById("doneBanner").classList.add("visible");
+      document.getElementById("donePath").textContent = data.path;
+    } else if (event === "error") {
+      document.getElementById("progressMsg").textContent = "Error: " + data.msg;
+      document.getElementById("progressPct").textContent = "";
+      document.getElementById("progressEta").textContent = "";
+      document.getElementById("renderBtn").disabled = false;
+      document.getElementById("renderBtn").textContent = "Render TikTok Video";
+    }
+  };
+
+  function revealFile() {
+    if (py() && outputPath) py().reveal_in_finder(outputPath);
+  }
+</script>
+</body>
+</html>
